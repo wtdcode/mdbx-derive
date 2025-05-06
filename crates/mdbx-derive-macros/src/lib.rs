@@ -97,7 +97,7 @@ fn decode_impl(input: &DeriveInput) -> proc_macro2::TokenStream {
                             #name
                         }
                     });
-                    let recur = fs.clone().zip(ranges.into_iter()).map(|(t, idx)| {
+                    let recur = fs.clone().zip(ranges).map(|(t, idx)| {
                         let name = &t.ident;
                         let ty = &t.ty;
                         quote_spanned! {t.span()=>
@@ -112,7 +112,7 @@ fn decode_impl(input: &DeriveInput) -> proc_macro2::TokenStream {
                         })
                     }
                 } else {
-                    let recur = fs.zip(ranges.into_iter()).map(|(t, idx)| {
+                    let recur = fs.zip(ranges).map(|(t, idx)| {
                         let ty = &t.ty;
                         quote_spanned! {t.span()=>
                             #ty::key_decode(bs[#idx].try_into().unwrap())?

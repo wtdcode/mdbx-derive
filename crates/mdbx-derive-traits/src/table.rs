@@ -22,13 +22,13 @@ impl TableObjectDecode for Vec<u8> {
     }
 }
 
-impl<'a> TableObjectEncode for Cow<'a, [u8]> {
+impl TableObjectEncode for Cow<'_, [u8]> {
     fn table_encode(&self) -> Result<Vec<u8>, MDBXDeriveError> {
         Ok(self.clone().into_owned())
     }
 }
 
-impl<'a> TableObjectDecode for Cow<'a, [u8]> {
+impl TableObjectDecode for Cow<'_, [u8]> {
     fn table_decode(val: &[u8]) -> Result<Self, MDBXDeriveError> {
         Ok(Self::Owned(val.to_vec()))
     }
