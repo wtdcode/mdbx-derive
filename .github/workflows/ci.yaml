@@ -22,4 +22,4 @@ jobs:
       env:
         TOKEN: ${{ secrets.CRATES_IO_KEY }}
       run: |
-        cargo login $TOKEN && cargo test && cargo install cargo-release && cargo release --execute
+        cargo login $TOKEN && cargo test && cargo install cargo-release && cargo release --execute --allow-branch '*'
