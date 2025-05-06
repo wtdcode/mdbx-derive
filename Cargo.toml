@@ -1,0 +1,23 @@
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+[workspace.dependencies]
+syn = {version = "2.0"}
+quote = {version = "1.0"}
+proc-macro2 = {version = "1.0"}
+zstd = {version = "0" }
+alloy-primitives = "0.8"
+thiserror = "2.0.12"
+serde = "1.0"
+itertools = { version = "0.12"}
+serde_json = {version = "1.0"}
+bincode = {version = "2.0"}
+mdbx-derive = {path = "crates/mdbx-derive"}
+mdbx-derive-traits = {path = "crates/mdbx-derive-traits"}
+mdbx-derive-macros = {path = "crates/mdbx-derive-macros"}
+mdbx-derive-tests = {path = "crates/mdbx-derive-tests"}

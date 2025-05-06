@@ -1,0 +1,9 @@
+[package]
+name = "mdbx-derive-tests"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde = {workspace = true, features = ["derive"]}
+bincode.workspace = true
+mdbx-derive.workspace = true
