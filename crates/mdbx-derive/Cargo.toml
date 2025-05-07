@@ -18,3 +18,4 @@ mdbx-derive-macros.workspace = true
 zstd.workspace = true
 serde_json.workspace = true
 bincode.workspace = true
+libmdbx-remote.workspace = true

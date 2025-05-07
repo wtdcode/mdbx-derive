@@ -12,6 +12,8 @@ pub enum MDBXDeriveError {
     BincodeEncode(bincode::error::EncodeError),
     #[error("bincode decode: {0}")]
     BincodeDecode(bincode::error::DecodeError),
+    #[error("mdbx: {0}")]
+    MDBX(libmdbx_remote::Error),
 }
 
 impl From<serde_json::Error> for MDBXDeriveError {

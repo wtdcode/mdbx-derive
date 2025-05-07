@@ -14,3 +14,7 @@ pub mod serde_json {
 pub mod bincode {
     pub use bincode::{config, decode_from_slice, encode_to_vec};
 }
+
+pub mod mdbx {
+    pub use libmdbx_remote::*;
+}
