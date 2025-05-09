@@ -177,6 +177,16 @@ pub fn derive_zstd_bindcode(input: TokenStream) -> TokenStream {
             }
         }
 
+        impl mdbx_derive::mdbx::TableObject for #ident {
+            fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
+                let config = mdbx_derive::bincode::config::standard();
+                let decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|_| {
+                    mdbx_derive::mdbx::Error::Corrupted
+                })?;
+                Ok(mdbx_derive::bincode::decode_from_slice(&decompressed, config).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)?.0)
+            }
+        }
+
         impl mdbx_derive::TableObjectEncode for #ident {
             fn table_encode(&self) -> Result<Vec<u8>, mdbx_derive::Error> {
                 let config = mdbx_derive::bincode::config::standard();
@@ -202,6 +212,15 @@ pub fn derive_zstd_json(input: TokenStream) -> TokenStream {
                     mdbx_derive::Error::Zstd(e)
                 })?;
                 Ok(mdbx_derive::serde_json::from_slice(&decompressed)?)
+            }
+        }
+
+        impl mdbx_derive::mdbx::TableObject for #ident {
+            fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
+                let decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|_| {
+                    mdbx_derive::mdbx::Error::Corrupted
+                })?;
+                Ok(mdbx_derive::serde_json::from_slice(&decompressed).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)?)
             }
         }
 
