@@ -7,8 +7,14 @@ pub mod zstd {
     pub use zstd::{decode_all, encode_all};
 }
 
-pub mod serde_json {
+#[cfg(feature = "serde_json")]
+pub mod json {
     pub use serde_json::{from_slice, to_vec};
+}
+
+#[cfg(feature = "simd-json")]
+pub mod json {
+    pub use simd_json::{from_slice, to_vec};
 }
 
 pub mod bincode {

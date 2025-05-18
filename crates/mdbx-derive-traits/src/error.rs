@@ -1,11 +1,16 @@
 use thiserror::Error;
 
+#[cfg(feature = "serde_json")]
+type JSONError = serde_json::Error;
+#[cfg(feature = "simd-json")]
+type JSONError = simd_json::Error;
+
 #[derive(Error, Debug)]
 pub enum MDBXDeriveError {
     #[error("corrputed")]
     Corrupted,
-    #[error("json: {0}")]
-    JSON(serde_json::Error),
+    #[error("JSON: {0}")]
+    JSON(JSONError),
     #[error("zstd: {0}")]
     Zstd(std::io::Error),
     #[error("bincode encode: {0}")]
@@ -16,8 +21,16 @@ pub enum MDBXDeriveError {
     MDBX(libmdbx_remote::Error),
 }
 
+#[cfg(feature = "serde_json")]
 impl From<serde_json::Error> for MDBXDeriveError {
     fn from(value: serde_json::Error) -> Self {
+        Self::JSON(value)
+    }
+}
+
+#[cfg(feature = "simd-json")]
+impl From<simd_json::Error> for MDBXDeriveError {
+    fn from(value: simd_json::Error) -> Self {
         Self::JSON(value)
     }
 }

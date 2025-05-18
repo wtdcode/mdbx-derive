@@ -211,7 +211,7 @@ pub fn derive_zstd_json(input: TokenStream) -> TokenStream {
                 let decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|e| {
                     mdbx_derive::Error::Zstd(e)
                 })?;
-                Ok(mdbx_derive::serde_json::from_slice(&decompressed)?)
+                Ok(mdbx_derive::json::from_slice(&decompressed)?)
             }
         }
 
@@ -220,13 +220,13 @@ pub fn derive_zstd_json(input: TokenStream) -> TokenStream {
                 let decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|_| {
                     mdbx_derive::mdbx::Error::Corrupted
                 })?;
-                Ok(mdbx_derive::serde_json::from_slice(&decompressed).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)?)
+                Ok(mdbx_derive::json::from_slice(&decompressed).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)?)
             }
         }
 
         impl mdbx_derive::TableObjectEncode for #ident {
             fn table_encode(&self) -> Result<Vec<u8>, mdbx_derive::Error> {
-                let bs = mdbx_derive::serde_json::to_vec(&self)?;
+                let bs = mdbx_derive::json::to_vec(&self)?;
                 let compressed = mdbx_derive::zstd::encode_all(std::io::Cursor::new(bs), 1).map_err(|e| {
                     mdbx_derive::Error::Zstd(e)
                 })?;
