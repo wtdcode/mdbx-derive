@@ -25,7 +25,7 @@ bincode = {version = "2.0"}
 libmdbx-remote = "0.3.0"
 simd-json = { version = "0.15" }
 
-mdbx-derive = {version = "0.2.1", path = "crates/mdbx-derive"}
-mdbx-derive-traits = {version = "0.2.1", path = "crates/mdbx-derive-traits"}
-mdbx-derive-macros = {version = "0.2.1", path = "crates/mdbx-derive-macros"}
-mdbx-derive-tests = {version = "0.2.1", path = "crates/mdbx-derive-tests"}
+mdbx-derive = {version = "0.2.1", default-features = false, path = "crates/mdbx-derive"}
+mdbx-derive-traits = {version = "0.2.1", default-features = false, path = "crates/mdbx-derive-traits"}
+mdbx-derive-macros = {version = "0.2.1", default-features = false, path = "crates/mdbx-derive-macros"}
+mdbx-derive-tests = {version = "0.2.1", default-features = false, path = "crates/mdbx-derive-tests"}
