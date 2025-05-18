@@ -208,19 +208,19 @@ pub fn derive_zstd_json(input: TokenStream) -> TokenStream {
     let output = quote! {
         impl mdbx_derive::TableObjectDecode for #ident {
             fn table_decode(data_val: &[u8]) -> Result<Self, mdbx_derive::Error> {
-                let decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|e| {
+                let mut decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|e| {
                     mdbx_derive::Error::Zstd(e)
                 })?;
-                Ok(mdbx_derive::json::from_slice(&decompressed)?)
+                Ok(mdbx_derive::json::from_slice(&mut decompressed)?)
             }
         }
 
         impl mdbx_derive::mdbx::TableObject for #ident {
             fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
-                let decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|_| {
+                let mut decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|_| {
                     mdbx_derive::mdbx::Error::Corrupted
                 })?;
-                Ok(mdbx_derive::json::from_slice(&decompressed).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)?)
+                Ok(mdbx_derive::json::from_slice(&mut decompressed).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)?)
             }
         }
 

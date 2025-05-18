@@ -9,7 +9,13 @@ pub mod zstd {
 
 #[cfg(feature = "serde_json")]
 pub mod json {
-    pub use serde_json::{from_slice, to_vec};
+    pub use serde_json::to_vec;
+    pub fn from_slice<'a, T>(v: &'a mut [u8]) -> serde_json::Result<T>
+    where
+        T: serde::de::Deserialize<'a>,
+    {
+        serde_json::from_slice(&*v)
+    }
 }
 
 #[cfg(feature = "simd-json")]

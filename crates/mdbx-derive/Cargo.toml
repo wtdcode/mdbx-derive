@@ -18,8 +18,10 @@ mdbx-derive-macros.workspace = true
 zstd.workspace = true
 bincode.workspace = true
 libmdbx-remote.workspace = true
+serde = {workspace = true, optional = true}
 serde_json = {workspace = true, optional = true}
 simd-json = {workspace = true, features = ["serde_impl"], optional = true}
 
 [features]
 default = ["simd-json"]
+serde_json = ["dep:serde", "dep:serde_json"]
