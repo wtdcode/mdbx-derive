@@ -5,9 +5,12 @@ mod test {
     use bincode::{Decode, Encode};
     use mdbx_derive::{
         KeyObject, KeyObjectDecode, KeyObjectEncode, TableObjectDecode, TableObjectEncode,
-        ZstdBincodeObject, ZstdJSONObject,
+        ZstdBincodeObject,
     };
     use serde::{Deserialize, Serialize};
+
+    #[cfg(any(feature = "simd-json", feature = "serde_json"))]
+    use mdbx_derive::ZstdJSONObject;
 
     #[derive(Encode, Decode, Default, Serialize, Deserialize, KeyObject, ZstdBincodeObject)]
     struct TrivialKey {
@@ -15,6 +18,7 @@ mod test {
         b: u64,
     }
 
+    #[cfg(any(feature = "simd-json", feature = "serde_json"))]
     #[derive(Encode, Decode, Default, Serialize, Deserialize, ZstdJSONObject)]
     struct TrivialJSONKey {
         a: u64,
@@ -52,6 +56,7 @@ mod test {
         assert_eq!(ky.b, 24);
     }
 
+    #[cfg(any(feature = "simd-json", feature = "serde_json"))]
     #[test]
     fn trivial_json() {
         let k = TrivialJSONKey { a: 42, b: 24 };

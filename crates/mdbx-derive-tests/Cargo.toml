@@ -12,3 +12,7 @@ repository.workspace = true
 serde = {workspace = true, features = ["derive"]}
 bincode.workspace = true
 mdbx-derive.workspace = true
+
+[features]
+simd-json = ["mdbx-derive/simd-json"]
+serde_json = ["mdbx-derive/serde_json"]

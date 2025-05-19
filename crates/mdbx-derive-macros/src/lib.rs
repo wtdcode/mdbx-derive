@@ -201,6 +201,7 @@ pub fn derive_zstd_bindcode(input: TokenStream) -> TokenStream {
     output.into()
 }
 
+#[cfg(feature = "json")]
 #[proc_macro_derive(ZstdJSONObject)]
 pub fn derive_zstd_json(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

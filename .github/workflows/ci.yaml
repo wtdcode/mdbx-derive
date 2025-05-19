@@ -15,7 +15,9 @@ jobs:
 
     - name: '🚧 Cargo test'
       run: |
-        cargo test --no-default-features --features simd-json && cargo test --no-default-features --features serde_json
+        cargo test --no-default-features --features simd-json &&\
+        cargo test --no-default-features --features serde_json &&\
+        cargo test --no-default-features
 
     - name: '📦 Cargo Publish'
       if: startsWith(github.ref, 'refs/tags')

@@ -4,6 +4,8 @@ use thiserror::Error;
 type JSONError = serde_json::Error;
 #[cfg(feature = "simd-json")]
 type JSONError = simd_json::Error;
+#[cfg(all(not(feature = "simd-json"), not(feature = "serde_json")))]
+type JSONError = String;
 
 #[derive(Error, Debug)]
 pub enum MDBXDeriveError {
@@ -31,6 +33,13 @@ impl From<serde_json::Error> for MDBXDeriveError {
 #[cfg(feature = "simd-json")]
 impl From<simd_json::Error> for MDBXDeriveError {
     fn from(value: simd_json::Error) -> Self {
+        Self::JSON(value)
+    }
+}
+
+#[cfg(all(not(feature = "simd-json"), not(feature = "serde_json")))]
+impl From<String> for MDBXDeriveError {
+    fn from(value: String) -> Self {
         Self::JSON(value)
     }
 }
