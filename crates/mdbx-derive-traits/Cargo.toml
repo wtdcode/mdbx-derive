@@ -9,7 +9,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [features]
-default = ["alloy", "simd-json"]
+default = ["alloy", "serde_json"]
 alloy = ["alloy-primitives"]
 
 [dependencies]

@@ -23,6 +23,6 @@ serde_json = {workspace = true, optional = true}
 simd-json = {workspace = true, features = ["serde_impl"], optional = true}
 
 [features]
-default = ["simd-json"]
+default = ["serde_json"]
 simd-json = ["dep:simd-json", "dep:serde", "mdbx-derive-traits/simd-json", "mdbx-derive-macros/json"]
 serde_json = ["dep:serde", "dep:serde_json", "mdbx-derive-traits/serde_json", "mdbx-derive-macros/json"]

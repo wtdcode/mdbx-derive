@@ -14,5 +14,6 @@ bincode.workspace = true
 mdbx-derive.workspace = true
 
 [features]
+default = ["serde_json"]
 simd-json = ["mdbx-derive/simd-json"]
 serde_json = ["mdbx-derive/serde_json"]
