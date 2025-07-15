@@ -73,10 +73,10 @@ fn decode_impl(input: &DeriveInput) -> proc_macro2::TokenStream {
                     .scan(quote! {0}, |acc, x| {
                         let ty = &x.ty;
                         let ret = Some(quote_spanned! {x.span()=>
-                            (#acc)..(#acc + #ty::KEYSIZE)
+                            (#acc)..(#acc + <#ty>::KEYSIZE)
                         });
 
-                        *acc = quote! { #acc + #ty::KEYSIZE };
+                        *acc = quote! { #acc + <#ty>::KEYSIZE };
                         ret
                     })
                     .collect_vec();
@@ -101,7 +101,7 @@ fn decode_impl(input: &DeriveInput) -> proc_macro2::TokenStream {
                         let name = &t.ident;
                         let ty = &t.ty;
                         quote_spanned! {t.span()=>
-                            let #name = #ty::key_decode(bs[#idx].try_into().unwrap())?;
+                            let #name = <#ty>::key_decode(bs[#idx].try_into().unwrap())?;
                         }
                     });
                     quote! {
@@ -115,7 +115,7 @@ fn decode_impl(input: &DeriveInput) -> proc_macro2::TokenStream {
                     let recur = fs.zip(ranges).map(|(t, idx)| {
                         let ty = &t.ty;
                         quote_spanned! {t.span()=>
-                            #ty::key_decode(bs[#idx].try_into().unwrap())?
+                            <#ty>::key_decode(bs[#idx].try_into().unwrap())?
                         }
                     });
 
