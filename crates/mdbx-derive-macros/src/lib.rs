@@ -162,6 +162,68 @@ fn decode_impl(input: &DeriveInput) -> proc_macro2::TokenStream {
     output
 }
 
+#[proc_macro_derive(BcsObject)]
+pub fn derive_bcs_object(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let ident = input.ident;
+    let output = quote! {
+        impl mdbx_derive::TableObjectDecode for #ident {
+            fn table_decode(data_val: &[u8]) -> Result<Self, mdbx_derive::Error> {
+                Ok(mdbx_derive::bcs::from_bytes(&data_val)?)
+            }
+        }
+
+        impl mdbx_derive::mdbx::TableObject for #ident {
+            fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
+                Ok(mdbx_derive::bcs::from_bytes(&data_val).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)?)
+            }
+        }
+
+        impl mdbx_derive::TableObjectEncode for #ident {
+            fn table_encode(&self) -> Result<Vec<u8>, mdbx_derive::Error> {
+                Ok(mdbx_derive::bcs::to_bytes(&self)?)
+            }
+        }
+    };
+    output.into()
+}
+
+#[proc_macro_derive(ZstdBcsObject)]
+pub fn derive_zstd_bcs_object(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let ident = input.ident;
+    let output = quote! {
+        impl mdbx_derive::TableObjectDecode for #ident {
+            fn table_decode(data_val: &[u8]) -> Result<Self, mdbx_derive::Error> {
+                let decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|e| {
+                    mdbx_derive::Error::Zstd(e)
+                })?;
+                Ok(mdbx_derive::bcs::from_bytes(&decompressed)?)
+            }
+        }
+
+        impl mdbx_derive::mdbx::TableObject for #ident {
+            fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
+                let decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|_| {
+                    mdbx_derive::mdbx::Error::Corrupted
+                })?;
+                Ok(mdbx_derive::bcs::from_bytes(&decompressed).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)?)
+            }
+        }
+
+        impl mdbx_derive::TableObjectEncode for #ident {
+            fn table_encode(&self) -> Result<Vec<u8>, mdbx_derive::Error> {
+                let bs = mdbx_derive::bcs::to_bytes(&self)?;
+                let compressed = mdbx_derive::zstd::encode_all(std::io::Cursor::new(bs), 1).map_err(|e| {
+                    mdbx_derive::Error::Zstd(e)
+                })?;
+                Ok(compressed)
+            }
+        }
+    };
+    output.into()
+}
+
 #[proc_macro_derive(ZstdBincodeObject)]
 pub fn derive_zstd_bindcode(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

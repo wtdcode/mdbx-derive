@@ -4,8 +4,8 @@ mod test {
 
     use bincode::{Decode, Encode};
     use mdbx_derive::{
-        KeyObject, KeyObjectDecode, KeyObjectEncode, TableObjectDecode, TableObjectEncode,
-        ZstdBincodeObject,
+        BcsObject, KeyObject, KeyObjectDecode, KeyObjectEncode, TableObjectDecode,
+        TableObjectEncode, ZstdBcsObject, ZstdBincodeObject,
     };
     use serde::{Deserialize, Serialize};
 
@@ -71,5 +71,33 @@ mod test {
         let ky = TrivialJSONKey::table_decode(&ky).expect("fail to decode key");
         assert_eq!(ky.a, 42);
         assert_eq!(ky.b, 24);
+    }
+
+    #[derive(Serialize, Deserialize, ZstdBcsObject)]
+    struct ZstdBcsTest {
+        a: u64,
+    }
+
+    #[derive(Serialize, Deserialize, BcsObject)]
+    struct BcsTest {
+        a: u64,
+    }
+
+    #[test]
+    fn test_plain_bcs() {
+        let v = BcsTest { a: 42 };
+
+        let ky = v.table_encode().unwrap();
+        let decoded: BcsTest = BcsTest::table_decode(&ky).unwrap();
+        assert_eq!(decoded.a, v.a);
+    }
+
+    #[test]
+    fn test_zstd_bcs() {
+        let v = ZstdBcsTest { a: 42 };
+
+        let ky = v.table_encode().unwrap();
+        let decoded: ZstdBcsTest = ZstdBcsTest::table_decode(&ky).unwrap();
+        assert_eq!(decoded.a, v.a);
     }
 }

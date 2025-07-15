@@ -30,3 +30,7 @@ pub mod bincode {
 pub mod mdbx {
     pub use libmdbx_remote::*;
 }
+
+pub mod bcs {
+    pub use bcs::{from_bytes, to_bytes};
+}

@@ -21,7 +21,8 @@ thiserror = "2.0.12"
 serde = "1.0"
 itertools = { version = "0.12"}
 serde_json = {version = "1.0"}
-bincode = {version = "2.0"}
+bincode = {version = "2.0", features = ["serde"]}
+bcs = "0.1.6"
 libmdbx-remote = "0.3.0"
 simd-json = { version = "0.15" }
 

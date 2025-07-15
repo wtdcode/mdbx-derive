@@ -21,6 +21,8 @@ pub enum MDBXDeriveError {
     BincodeDecode(bincode::error::DecodeError),
     #[error("mdbx: {0}")]
     MDBX(libmdbx_remote::Error),
+    #[error("bcs: {0}")]
+    BCS(bcs::Error),
 }
 
 #[cfg(feature = "serde_json")]
@@ -53,5 +55,11 @@ impl From<bincode::error::EncodeError> for MDBXDeriveError {
 impl From<bincode::error::DecodeError> for MDBXDeriveError {
     fn from(value: bincode::error::DecodeError) -> Self {
         Self::BincodeDecode(value)
+    }
+}
+
+impl From<bcs::Error> for MDBXDeriveError {
+    fn from(value: bcs::Error) -> Self {
+        Self::BCS(value)
     }
 }

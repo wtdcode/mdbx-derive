@@ -18,5 +18,6 @@ thiserror.workspace = true
 zstd.workspace = true
 bincode.workspace = true
 libmdbx-remote.workspace = true
+bcs.workspace = true
 serde_json = {workspace = true, optional = true}
 simd-json = {workspace = true, features = ["serde_impl"], optional = true}
