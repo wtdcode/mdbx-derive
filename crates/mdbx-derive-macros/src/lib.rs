@@ -83,7 +83,7 @@ fn decode_impl(input: &DeriveInput) -> proc_macro2::TokenStream {
                 let recur = fs.clone().map(|t| {
                     let ty = &t.ty;
                     quote_spanned! {t.span()=>
-                        #ty::KEYSIZE
+                        <#ty>::KEYSIZE
                     }
                 });
                 let tyts = quote! {
@@ -140,7 +140,7 @@ fn decode_impl(input: &DeriveInput) -> proc_macro2::TokenStream {
             let ks = st.fields.iter().map(|f| {
                 let ty = &f.ty;
                 quote_spanned! {f.span()=>
-                    #ty::KEYSIZE
+                    <#ty>::KEYSIZE
                 }
             });
 
