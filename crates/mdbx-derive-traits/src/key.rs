@@ -29,6 +29,19 @@ impl KeyObjectEncode for Vec<u8> {
     }
 }
 
+impl<const N: usize> KeyObjectEncode for [u8; N] {
+    fn key_encode(&self) -> Result<Vec<u8>, MDBXDeriveError> {
+        Ok(self.to_vec())
+    }
+}
+
+impl<const N: usize> KeyObjectDecode for [u8; N] {
+    const KEYSIZE: usize = N;
+    fn key_decode(val: &[u8]) -> Result<Self, MDBXDeriveError> {
+        val.try_into().map_err(|_| MDBXDeriveError::Corrupted)
+    }
+}
+
 macro_rules! impl_ints {
     ( $( $name:ident )+ ) => {
         $(
