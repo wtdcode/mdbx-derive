@@ -4,8 +4,8 @@ mod test {
 
     use bincode::{Decode, Encode};
     use mdbx_derive::{
-        BcsObject, KeyObject, KeyObjectDecode, KeyObjectEncode, TableObjectDecode,
-        TableObjectEncode, ZstdBcsObject, ZstdBincodeObject,
+        KeyObject, KeyObjectDecode, KeyObjectEncode, TableObjectDecode, TableObjectEncode,
+        ZstdBincodeObject,
     };
     use serde::{Deserialize, Serialize};
 
@@ -72,17 +72,22 @@ mod test {
         assert_eq!(ky.a, 42);
         assert_eq!(ky.b, 24);
     }
+    #[cfg(feature = "bcs")]
+    use mdbx_derive::{BcsObject, ZstdBcsObject};
 
+    #[cfg(feature = "bcs")]
     #[derive(Serialize, Deserialize, ZstdBcsObject)]
     struct ZstdBcsTest {
         a: u64,
     }
 
+    #[cfg(feature = "bcs")]
     #[derive(Serialize, Deserialize, BcsObject)]
     struct BcsTest {
         a: u64,
     }
 
+    #[cfg(feature = "bcs")]
     #[test]
     fn test_plain_bcs() {
         let v = BcsTest { a: 42 };
@@ -92,6 +97,7 @@ mod test {
         assert_eq!(decoded.a, v.a);
     }
 
+    #[cfg(feature = "bcs")]
     #[test]
     fn test_zstd_bcs() {
         let v = ZstdBcsTest { a: 42 };

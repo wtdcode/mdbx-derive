@@ -17,6 +17,7 @@ jobs:
       run: |
         cargo test --no-default-features --features simd-json &&\
         cargo test --no-default-features --features serde_json &&\
+        cargo test --no-default-features --features bcs &&\
         cargo test --no-default-features
 
     - name: '📦 Cargo Publish'

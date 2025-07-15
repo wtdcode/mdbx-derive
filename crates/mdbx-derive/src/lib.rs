@@ -31,6 +31,7 @@ pub mod mdbx {
     pub use libmdbx_remote::*;
 }
 
+#[cfg(feature = "bcs")]
 pub mod bcs {
     pub use bcs::{from_bytes, to_bytes};
 }
