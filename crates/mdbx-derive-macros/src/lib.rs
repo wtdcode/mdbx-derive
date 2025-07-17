@@ -50,7 +50,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
         impl mdbx_derive::mdbx::TableObject for #ident {
             fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
-                Self::key_decode(data_val).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)
+                <Self as mdbx_derive::KeyObjectDecode>::key_decode(data_val).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)
             }
         }
 

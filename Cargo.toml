@@ -3,7 +3,7 @@ members = ["crates/*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.4.1"
+version = "0.4.2"
 edition = "2024"
 license = "GPL-2.0-only"
 readme = "Readme.md"
@@ -26,7 +26,7 @@ bcs = "0.1.6"
 libmdbx-remote = "0.3.0"
 simd-json = { version = "0.15" }
 
-mdbx-derive = {version = "0.4.1", default-features = false, path = "crates/mdbx-derive"}
-mdbx-derive-traits = {version = "0.4.1", default-features = false, path = "crates/mdbx-derive-traits"}
-mdbx-derive-macros = {version = "0.4.1", default-features = false, path = "crates/mdbx-derive-macros"}
-mdbx-derive-tests = {version = "0.4.1", default-features = false, path = "crates/mdbx-derive-tests"}
+mdbx-derive = {version = "0.4.2", default-features = false, path = "crates/mdbx-derive"}
+mdbx-derive-traits = {version = "0.4.2", default-features = false, path = "crates/mdbx-derive-traits"}
+mdbx-derive-macros = {version = "0.4.2", default-features = false, path = "crates/mdbx-derive-macros"}
+mdbx-derive-tests = {version = "0.4.2", default-features = false, path = "crates/mdbx-derive-tests"}
