@@ -12,8 +12,14 @@ mod test {
     #[cfg(any(feature = "simd-json", feature = "serde_json"))]
     use mdbx_derive::ZstdJSONObject;
 
-    #[derive(Encode, Decode, Default, Serialize, Deserialize, KeyObject, ZstdBincodeObject)]
+    #[derive(Encode, Decode, Default, Serialize, Deserialize, KeyObject)]
     struct TrivialKey {
+        a: u64,
+        b: u64,
+    }
+
+    #[derive(Encode, Decode, Default, Serialize, Deserialize, ZstdBincodeObject)]
+    struct TrivialObject {
         a: u64,
         b: u64,
     }
@@ -39,7 +45,7 @@ mod test {
 
     #[test]
     fn trivial_object() {
-        let k = TrivialKey { a: 42, b: 24 };
+        let k = TrivialObject { a: 42, b: 24 };
         let ky = k.table_encode().expect("fail to encode");
         let expected = mdbx_derive::zstd::encode_all(
             Cursor::new(
@@ -51,7 +57,7 @@ mod test {
         .expect("zstd");
         assert_eq!(ky, expected);
 
-        let ky = TrivialKey::table_decode(&ky).expect("fail to decode key");
+        let ky = TrivialObject::table_decode(&ky).expect("fail to decode key");
         assert_eq!(ky.a, 42);
         assert_eq!(ky.b, 24);
     }
