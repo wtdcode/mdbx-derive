@@ -345,6 +345,13 @@ macro_rules! mdbx_database {
                         dbis
                     }
                 }
+
+                pub async fn open_create_tables_with_defaults(url: &str, defaults: mdbx_derive::mdbx::EnvironmentBuilder) -> Result<Self, $error_type> {
+                    let env =  mdbx_derive::mdbx::EnvironmentAny::open_with_defaults(url, defaults).await?;
+                    let dbis = [<$db_name Dbi>]::new(&env, mdbx_derive::mdbx::DatabaseFlags::default())
+                            .await?;
+                    Ok(Self::new(env, dbis))
+                }
             }
         }
 
