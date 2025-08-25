@@ -56,11 +56,11 @@ where
 }
 
 impl<E> MDBXTables<E> for () {
-    fn create_all(
+    async fn create_all(
         _tx: &libmdbx_remote::TransactionAny<RW>,
         _flags: DatabaseFlags,
-    ) -> impl Future<Output = Result<HashMap<String, u32>, E>> + Send {
-        async { Ok(HashMap::new()) }
+    ) -> Result<HashMap<String, u32>, E> {
+        Ok(HashMap::new())
     }
 }
 
@@ -70,17 +70,15 @@ where
     Head: MDBXTable,
     Tail: MDBXTables<E>,
 {
-    fn create_all(
+    async fn create_all(
         tx: &libmdbx_remote::TransactionAny<RW>,
         flags: DatabaseFlags,
-    ) -> impl Future<Output = Result<HashMap<String, u32>, E>> + Send {
-        async move {
-            let mut vals = HashMap::new();
-            let dbi = Head::create_table_tx(tx, flags).await?;
-            vals.insert(Head::NAME.map(|s| s.to_string()).unwrap_or_default(), dbi);
-            vals.extend(Tail::create_all(tx, flags).await?);
-            Ok(vals)
-        }
+    ) -> Result<HashMap<String, u32>, E> {
+        let mut vals = HashMap::new();
+        let dbi = Head::create_table_tx(tx, flags).await?;
+        vals.insert(Head::NAME.map(|s| s.to_string()).unwrap_or_default(), dbi);
+        vals.extend(Tail::create_all(tx, flags).await?);
+        Ok(vals)
     }
 }
 
@@ -202,7 +200,7 @@ pub trait HasMDBXDBIStore {
     fn dbi<T: MDBXTable>(&self) -> Option<u32> {
         self.dbis()
             .get(&T::NAME.map(|v| v.to_string()).unwrap_or_default())
-            .map(|v| *v)
+            .copied()
     }
 }
 

@@ -45,7 +45,7 @@ impl<const N: usize> KeyObjectDecode for [u8; N] {
 impl KeyObjectDecode for () {
     const KEYSIZE: usize = 0;
     fn key_decode(val: &[u8]) -> Result<Self, MDBXDeriveError> {
-        if val.len() == 0 {
+        if val.is_empty() {
             Ok(())
         } else {
             Err(MDBXDeriveError::IncorrectSchema(val.to_vec()))

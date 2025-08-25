@@ -1,9 +1,6 @@
 use std::borrow::Cow;
 
-use crate::{
-    error::MDBXDeriveError,
-    key::{KeyObjectDecode, KeyObjectEncode},
-};
+use crate::error::MDBXDeriveError;
 
 pub trait TableObjectEncode {
     fn table_encode(&self) -> Result<Vec<u8>, MDBXDeriveError>;
@@ -39,7 +36,7 @@ impl TableObjectDecode for Cow<'_, [u8]> {
 
 impl TableObjectDecode for () {
     fn table_decode(val: &[u8]) -> Result<Self, MDBXDeriveError> {
-        if val.len() == 0 {
+        if val.is_empty() {
             Ok(())
         } else {
             Err(MDBXDeriveError::IncorrectSchema(val.to_vec()))

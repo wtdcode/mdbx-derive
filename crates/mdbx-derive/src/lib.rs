@@ -2,9 +2,9 @@ pub use mdbx_derive_macros::*;
 pub use mdbx_derive_traits::error::MDBXDeriveError as Error;
 pub use mdbx_derive_traits::key::{KeyObjectDecode, KeyObjectEncode};
 pub use mdbx_derive_traits::{
+    orm::{HasMDBXEnvironment, MDBXDatabase, MDBXTable},
+    table::{TableObjectDecode, TableObjectEncode},
     {mdbx_database, mdbx_table},
-    orm::{MDBXDatabase, MDBXTable, HasMDBXEnvironment},
-    table::{TableObjectDecode, TableObjectEncode}
 };
 
 pub use tuple_list::{tuple_list, tuple_list_type};
