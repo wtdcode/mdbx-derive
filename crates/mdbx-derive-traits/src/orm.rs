@@ -337,6 +337,15 @@ macro_rules! mdbx_database {
                 pub env: mdbx_derive::mdbx::EnvironmentAny,
                 pub dbis: [<$db_name Dbi>]
             }
+
+            impl $db_name {
+                pub fn new(env: mdbx_derive::mdbx::EnvironmentAny, dbis: [<$db_name Dbi>]) -> Self {
+                    Self {
+                        env,
+                        dbis
+                    }
+                }
+            }
         }
 
         impl mdbx_derive::HasMDBXEnvironment for $db_name {
