@@ -253,7 +253,9 @@ pub trait MDBXDatabase: Sized + Send + Sync + HasMDBXEnvironment + HasMDBXTables
     ) -> impl Future<Output = Result<(), Self::Error>> + Send {
         async move {
             let tx = self.env().begin_rw_txn().await?;
-            self.write_metadata_tx(None, &tx, meta).await
+            self.write_metadata_tx(None, &tx, meta).await?;
+            tx.commit().await?;
+            Ok(())
         }
     }
 

@@ -13,7 +13,7 @@ pub enum MDBXDeriveError {
     Corrupted,
     #[error("incorrect schema")]
     IncorrectSchema(Vec<u8>),
-    #[cfg(any(feature = "serde_json", feature="simd-json"))]
+    #[cfg(any(feature = "serde_json", feature = "simd-json"))]
     #[error("JSON: {0}")]
     JSON(#[from] JSONError),
     #[error("zstd: {0}")]
