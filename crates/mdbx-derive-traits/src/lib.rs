@@ -2,6 +2,7 @@
 
 pub mod error;
 pub mod key;
+pub mod orm;
 pub mod table;
 
 #[cfg(feature = "alloy")]

@@ -42,6 +42,23 @@ impl<const N: usize> KeyObjectDecode for [u8; N] {
     }
 }
 
+impl KeyObjectDecode for () {
+    const KEYSIZE: usize = 0;
+    fn key_decode(val: &[u8]) -> Result<Self, MDBXDeriveError> {
+        if val.len() == 0 {
+            Ok(())
+        } else {
+            Err(MDBXDeriveError::IncorrectSchema(val.to_vec()))
+        }
+    }
+}
+
+impl KeyObjectEncode for () {
+    fn key_encode(&self) -> Result<Vec<u8>, MDBXDeriveError> {
+        Ok(vec![])
+    }
+}
+
 macro_rules! impl_ints {
     ( $( $name:ident )+ ) => {
         $(

@@ -11,6 +11,8 @@ type JSONError = String;
 pub enum MDBXDeriveError {
     #[error("corrputed")]
     Corrupted,
+    #[error("incorrect schema")]
+    IncorrectSchema(Vec<u8>),
     #[error("JSON: {0}")]
     JSON(#[from] JSONError),
     #[error("zstd: {0}")]
