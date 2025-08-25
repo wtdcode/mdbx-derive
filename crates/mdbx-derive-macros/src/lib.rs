@@ -1,7 +1,14 @@
+use heck::ToSnakeCase;
 use itertools::Itertools;
 use proc_macro::TokenStream;
 use quote::{quote, quote_spanned};
-use syn::{Data, DeriveInput, Fields, Index, parse_macro_input, spanned::Spanned};
+use syn::{
+    Data, DeriveInput, Fields, Ident, Index, Token, Type,
+    parse::{Parse, ParseStream},
+    parse_macro_input,
+    punctuated::Punctuated,
+    spanned::Spanned,
+};
 
 #[proc_macro_derive(KeyObject)]
 pub fn derive(input: TokenStream) -> TokenStream {
@@ -303,5 +310,165 @@ pub fn derive_zstd_json(input: TokenStream) -> TokenStream {
             }
         }
     };
+    output.into()
+}
+
+// Helper struct to parse the macro's input
+struct MacroInput {
+    struct_name: Ident,
+    error_type: Type,
+    tables: Punctuated<Type, Token![,]>,
+}
+
+impl Parse for MacroInput {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let struct_name: Ident = input.parse()?;
+        input.parse::<Token![,]>()?;
+        let error_type: Type = input.parse()?;
+        input.parse::<Token![,]>()?;
+        let tables = input.parse_terminated(Type::parse, Token![,])?;
+        Ok(MacroInput {
+            struct_name,
+            error_type,
+            tables,
+        })
+    }
+}
+
+#[proc_macro]
+pub fn generate_dbi_struct(input: TokenStream) -> TokenStream {
+    let MacroInput {
+        struct_name,
+        error_type,
+        tables,
+    } = syn::parse_macro_input!(input as MacroInput);
+
+    let field_names: Vec<_> = tables
+        .iter()
+        .map(|table_type| {
+            let type_path = if let Type::Path(tp) = table_type {
+                tp
+            } else {
+                panic!("Expected a type path")
+            };
+            let type_ident_str = type_path.path.segments.last().unwrap().ident.to_string();
+            let field_name_str = type_ident_str.to_snake_case();
+            Ident::new(&field_name_str, proc_macro2::Span::call_site())
+        })
+        .collect();
+
+    let field_statemens: Vec<_> = tables
+        .iter()
+        .map(|table_type| {
+            let type_path = if let Type::Path(tp) = table_type {
+                tp
+            } else {
+                panic!("Expected a type path")
+            };
+            let ty = type_path.path.segments.last().unwrap().ident.clone();
+            let field_name_str = ty.to_string().to_snake_case();
+            let ident = Ident::new(&field_name_str, proc_macro2::Span::call_site());
+
+            quote! {
+                let #ident = <#ty as mdbx_derive::MDBXTable>::create_table_tx(&tx, flags).await?;
+
+            }
+        })
+        .collect();
+
+    let ro_field_statemens: Vec<_> = tables
+        .iter()
+        .map(|table_type| {
+            let type_path = if let Type::Path(tp) = table_type {
+                tp
+            } else {
+                panic!("Expected a type path")
+            };
+            let ty = type_path.path.segments.last().unwrap().ident.clone();
+            let field_name_str = ty.to_string().to_snake_case();
+            let ident = Ident::new(&field_name_str, proc_macro2::Span::call_site());
+
+            quote! {
+                let #ident = <#ty as mdbx_derive::MDBXTable>::open_table_tx(&tx).await?;
+
+            }
+        })
+        .collect();
+
+    let fields = tables
+        .iter()
+        .zip(field_names.iter())
+        .map(|(table_type, field_name)| {
+            let type_path = if let Type::Path(tp) = table_type {
+                tp
+            } else {
+                panic!()
+            };
+            let type_ident_str = type_path.path.segments.last().unwrap().ident.to_string();
+            let doc_string = format!("DBI handle for the `{}` table.", type_ident_str);
+
+            quote! {
+                #[doc = #doc_string]
+                pub #field_name: u32,
+            }
+        });
+
+    let original_type_names: Vec<_> = tables
+        .iter()
+        .map(|table_type| {
+            let type_path = if let Type::Path(tp) = table_type {
+                tp
+            } else {
+                panic!("Expected a type path")
+            };
+            let type_ident_str = type_path.path.segments.last().unwrap().ident.to_string();
+            Ident::new(&type_ident_str, proc_macro2::Span::call_site())
+        })
+        .collect(); // The crucial change is here!
+
+    let output = quote! {
+        #[derive(Debug, Clone, Copy)]
+        pub struct #struct_name {
+            #( #fields )*
+        }
+
+        impl #struct_name {
+            pub async fn new(
+                env: &mdbx_derive::mdbx::EnvironmentAny,
+                flags: mdbx_derive::mdbx::DatabaseFlags,
+            ) -> Result<Self, #error_type> {
+                let tx = env.begin_rw_txn().await?;
+
+                #(
+                    #field_statemens
+                )*
+
+                tx.commit().await?;
+
+                Ok(Self {
+                    #( #field_names, )*
+                })
+            }
+
+            pub async fn new_ro<K: mdbx_derive::mdbx::TransactionKind>(
+                tx: &mdbx_derive::mdbx::TransactionAny<K>
+            ) -> Result<Self, #error_type> {
+
+                #(
+                    #ro_field_statemens
+                )*
+
+                Ok(Self {
+                    #( #field_names, )*
+                })
+            }
+        }
+
+        impl mdbx_derive::HasMDBXTables for #struct_name {
+            type Error = #error_type;
+            type Tables = mdbx_derive::tuple_list_type!(#( #original_type_names),*);
+        }
+    };
+
     output.into()
 }

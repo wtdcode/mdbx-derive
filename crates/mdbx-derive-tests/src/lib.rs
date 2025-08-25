@@ -5,7 +5,7 @@ mod test {
     use bincode::{Decode, Encode};
     use mdbx_derive::{
         HasMDBXEnvironment, KeyObject, KeyObjectDecode, KeyObjectEncode, TableObjectDecode,
-        TableObjectEncode, ZstdBincodeObject, mdbx_database, mdbx_table,
+        TableObjectEncode, ZstdBincodeObject, generate_dbi_struct, mdbx_database, mdbx_table,
     };
     use serde::{Deserialize, Serialize};
 
@@ -13,13 +13,13 @@ mod test {
     use mdbx_derive::ZstdJSONObject;
 
     #[derive(Encode, Decode, Default, Serialize, Deserialize, KeyObject)]
-    struct TrivialKey {
+    pub struct TrivialKey {
         a: u64,
         b: u64,
     }
 
     #[derive(Encode, Decode, Default, Serialize, Deserialize, ZstdBincodeObject)]
-    struct TrivialObject {
+    pub struct TrivialObject {
         a: u64,
         b: u64,
     }
@@ -31,42 +31,22 @@ mod test {
         b: u64,
     }
 
-    struct TrivailTable;
+    #[allow(dead_code)]
+    pub struct TrivailTable;
+    #[allow(dead_code)]
+    pub struct TrivailTable2;
 
     mdbx_table!(TrivailTable, TrivialKey, TrivialObject);
+    mdbx_table!(TrivailTable2, TrivialKey, TrivialObject);
 
-    #[allow(dead_code)]
-    struct TrivialDatabase(mdbx_derive::mdbx::EnvironmentAny);
-
-    impl HasMDBXEnvironment for TrivialDatabase {
-        fn env(&self) -> &mdbx_derive::mdbx::EnvironmentAny {
-            &self.0
-        }
-    }
-
-    mdbx_database!(TrivialDatabase, TrivailTable);
-
-    #[allow(dead_code)]
-    struct TrivialDatabase2(TrivialDatabase);
-
-    impl HasMDBXEnvironment for TrivialDatabase2 {
-        fn env(&self) -> &mdbx_derive::mdbx::EnvironmentAny {
-            &self.0.0
-        }
-    }
-
-    mdbx_database!(TrivialDatabase2, mdbx_derive::Error, (), TrivailTable);
-
-    #[allow(dead_code)]
-    struct TrivialDatabase3(TrivialDatabase);
-
-    impl HasMDBXEnvironment for TrivialDatabase3 {
-        fn env(&self) -> &mdbx_derive::mdbx::EnvironmentAny {
-            &self.0.0
-        }
-    }
-
-    mdbx_database!(TrivialDatabase3, mdbx_derive::Error, TrivailTable);
+    mdbx_database!(TrivialDatabase, mdbx_derive::Error, (), TrivailTable);
+    mdbx_database!(
+        TrivialDatabase2,
+        mdbx_derive::Error,
+        (),
+        TrivailTable,
+        TrivailTable2
+    );
 
     #[test]
     fn trivial_key() {

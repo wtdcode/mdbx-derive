@@ -204,9 +204,12 @@ pub trait HasMDBXDBIStore {
     }
 }
 
-pub trait MDBXDatabase: Sized + Send + Sync + HasMDBXEnvironment {
+pub trait HasMDBXTables {
     type Error: From<libmdbx_remote::ClientError> + From<MDBXDeriveError> + Send + 'static;
     type Tables: MDBXTables<Self::Error>;
+}
+
+pub trait MDBXDatabase: Sized + Send + Sync + HasMDBXEnvironment + HasMDBXTables {
     type Metadata: TableObjectEncode + TableObjectDecode + Send + Sync;
     const METADATA_NAME: &'static [u8] = b"metadata";
 
@@ -326,33 +329,29 @@ macro_rules! mdbx_database {
         $metadata_type:ty,
         $($tables:ty),+
     ) => {
+        mdbx_derive::paste::paste! {
+            mdbx_derive::generate_dbi_struct!([<$db_name Dbi>], $error_type, $($tables),*);
+
+            #[derive(Debug, Clone)]
+            pub struct $db_name {
+                pub env: mdbx_derive::mdbx::EnvironmentAny,
+                pub dbis: [<$db_name Dbi>]
+            }
+        }
+
+        impl mdbx_derive::HasMDBXEnvironment for $db_name {
+            fn env(&self) -> &mdbx_derive::mdbx::EnvironmentAny {
+                &self.env
+            }
+        }
+
         impl mdbx_derive::MDBXDatabase for $db_name {
-            type Error = $error_type;
             type Metadata = $metadata_type;
+        }
+
+        impl mdbx_derive::HasMDBXTables for $db_name {
+            type Error = $error_type;
             type Tables = mdbx_derive::tuple_list_type!($($tables),*);
         }
-    };
-    (
-        $db_name:ident,
-        $error_type:ty,
-        $($tables:ty),+
-    ) => {
-        $crate::mdbx_database!(
-            $db_name,
-            $error_type,
-            (),
-            $($tables),+
-        );
-    };
-    (
-        $db_name:ident,
-        $($tables:ty),+
-    ) => {
-        $crate::mdbx_database!(
-            $db_name,
-            mdbx_derive::Error,
-            (),
-            $($tables),+
-        );
     };
 }

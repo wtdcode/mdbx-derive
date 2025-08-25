@@ -2,11 +2,12 @@ pub use mdbx_derive_macros::*;
 pub use mdbx_derive_traits::error::MDBXDeriveError as Error;
 pub use mdbx_derive_traits::key::{KeyObjectDecode, KeyObjectEncode};
 pub use mdbx_derive_traits::{
-    orm::{HasMDBXDBIStore, HasMDBXEnvironment, MDBXDatabase, MDBXTable},
+    orm::{HasMDBXDBIStore, HasMDBXEnvironment, HasMDBXTables, MDBXDatabase, MDBXTable},
     table::{TableObjectDecode, TableObjectEncode},
     {mdbx_database, mdbx_table},
 };
 
+pub use paste;
 pub use tuple_list::{tuple_list, tuple_list_type};
 
 pub mod zstd {
