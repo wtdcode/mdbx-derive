@@ -111,7 +111,7 @@ fn decode_impl(input: &DeriveInput) -> proc_macro2::TokenStream {
                         }
                     });
                     quote! {
-                        let bs: [u8; #tyts] = val.try_into().map_err(|_| mdbx_derive::Error::Corrupted)?;
+                        let bs: [u8; #tyts] = val.try_into().map_err(|_| mdbx_derive::Error::IncorrectSchema(val.to_vec()))?;
                         #(#recur)*
                         Ok(Self {
                             #(#names),*
@@ -126,7 +126,7 @@ fn decode_impl(input: &DeriveInput) -> proc_macro2::TokenStream {
                     });
 
                     quote! {
-                        let bs: [u8; #tyts] = val.try_into().map_err(|_| mdbx_derive::Error::Corrupted)?;
+                        let bs: [u8; #tyts] = val.try_into().map_err(|_| mdbx_derive::Error::IncorrectSchema(val.to_vec()))?;
                         Ok(Self(#(#recur),*))
                     }
                 }

@@ -4,8 +4,7 @@ mod test {
 
     use bincode::{Decode, Encode};
     use mdbx_derive::{
-        KeyObject, KeyObjectDecode, KeyObjectEncode, TableObjectDecode, TableObjectEncode,
-        ZstdBincodeObject, mdbx_table,
+        mdbx_database, mdbx_table, HasMDBXEnvironment, KeyObject, KeyObjectDecode, KeyObjectEncode, TableObjectDecode, TableObjectEncode, ZstdBincodeObject
     };
     use serde::{Deserialize, Serialize};
 
@@ -34,6 +33,36 @@ mod test {
     struct TrivailTable;
 
     mdbx_table!(TrivailTable, TrivialKey, TrivialObject);
+
+    struct TrivialDatabase(mdbx_derive::mdbx::EnvironmentAny);
+    
+    impl HasMDBXEnvironment for TrivialDatabase {
+        fn env(&self) -> &mdbx_derive::mdbx::EnvironmentAny {
+            &self.0
+        }
+    }
+
+    mdbx_database!(TrivialDatabase, TrivailTable);
+
+    struct TrivialDatabase2(TrivialDatabase);
+
+    impl HasMDBXEnvironment for TrivialDatabase2 {
+        fn env(&self) -> &mdbx_derive::mdbx::EnvironmentAny {
+            &self.0.0
+        }
+    }
+
+    mdbx_database!(TrivialDatabase2, mdbx_derive::Error, (), TrivailTable);
+
+    struct TrivialDatabase3(TrivialDatabase);
+
+    impl HasMDBXEnvironment for TrivialDatabase3 {
+        fn env(&self) -> &mdbx_derive::mdbx::EnvironmentAny {
+            &self.0.0
+        }
+    }
+
+    mdbx_database!(TrivialDatabase3, mdbx_derive::Error, TrivailTable);
 
     #[test]
     fn trivial_key() {
