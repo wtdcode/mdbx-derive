@@ -143,3 +143,28 @@ pub trait MDBXTable: Sized {
         }
     }
 }
+
+#[macro_export]
+macro_rules! mdbx_table {
+    (
+        $struct_name:ident,
+        $key_type:ty,
+        $value_type:ty
+    ) => {
+        $crate::mdbx_table!($struct_name, $key_type, $value_type, mdbx_derive::Error);
+    };
+    (
+        $struct_name:ident,
+        $key_type:ty,
+        $value_type:ty,
+        $error_type:ty
+    ) => {
+        impl mdbx_derive::MDBXTable for $struct_name {
+            type Key = $key_type;
+            type Value = $value_type;
+            type Error = $error_type;
+
+            const NAME: Option<&'static str> = Some(stringify!($struct_name));
+        }
+    };
+}

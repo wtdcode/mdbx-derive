@@ -5,7 +5,7 @@ mod test {
     use bincode::{Decode, Encode};
     use mdbx_derive::{
         KeyObject, KeyObjectDecode, KeyObjectEncode, TableObjectDecode, TableObjectEncode,
-        ZstdBincodeObject,
+        ZstdBincodeObject, mdbx_table,
     };
     use serde::{Deserialize, Serialize};
 
@@ -30,6 +30,10 @@ mod test {
         a: u64,
         b: u64,
     }
+
+    struct TrivailTable;
+
+    mdbx_table!(TrivailTable, TrivialKey, TrivialObject);
 
     #[test]
     fn trivial_key() {
