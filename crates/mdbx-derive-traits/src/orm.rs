@@ -338,6 +338,13 @@ macro_rules! mdbx_database {
                 pub dbis: [<$db_name Dbi>]
             }
 
+            impl std::ops::Deref for $db_name {
+                type Target = mdbx_derive::mdbx::EnvironmentAny;
+                fn deref(&self) -> &Self::Target {
+                    &self.env
+                }
+            }
+
             impl $db_name {
                 pub fn new(env: mdbx_derive::mdbx::EnvironmentAny, dbis: [<$db_name Dbi>]) -> Self {
                     Self {
