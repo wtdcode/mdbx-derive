@@ -114,8 +114,8 @@ pub trait MDBXTable: Sized {
 
     fn put_item(
         env: &libmdbx_remote::EnvironmentAny,
-        key: Self::Key,
-        value: Self::Value,
+        key: &Self::Key,
+        value: &Self::Value,
         flags: libmdbx_remote::WriteFlags,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send {
         async move {
@@ -127,8 +127,8 @@ pub trait MDBXTable: Sized {
     fn put_item_tx(
         tx: &libmdbx_remote::TransactionAny<libmdbx_remote::RW>,
         dbi: Option<u32>,
-        key: Self::Key,
-        value: Self::Value,
+        key: &Self::Key,
+        value: &Self::Value,
         flags: libmdbx_remote::WriteFlags,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send {
         async move {
