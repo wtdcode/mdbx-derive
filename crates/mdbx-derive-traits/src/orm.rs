@@ -361,6 +361,14 @@ macro_rules! mdbx_database {
                             .await?;
                     Ok(Self::new(env, dbis))
                 }
+
+                pub async fn open_tables_with_defaults(url: &str, defaults: mdbx_derive::mdbx::EnvironmentBuilder) -> Result<Self, $error_type> {
+                    let env =  mdbx_derive::mdbx::EnvironmentAny::open_with_defaults(url, defaults).await?;
+                    let tx = env.begin_ro_txn().await?;
+                    let dbis = [<$db_name Dbi>]::new_ro(&tx)
+                            .await?;
+                    Ok(Self::new(env, dbis))
+                }
             }
         }
 

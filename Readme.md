@@ -14,9 +14,14 @@ There are three macros to derive on your structs:
 
 - `serde_json`: Use `serde_json` for `ZstdJSONObject` macro.
 - `simd_json`: Use `simd_json` for `ZstdJSONObject` macro.
+- `bcs`: Support `bcs` encoding, mostly for sui move.
 - `alloy`: Implement `KeyObject` for alloy tyes.
 
-## Sample
+## Tutorial
+
+## Minimal Example
+
+`mdbx-derive` actually is not limited with `mdbx` and can be used to serialize/deserialize data freely.
 
 ```rust
 #[cfg(test)]
@@ -94,4 +99,47 @@ mod test {
         assert_eq!(ky.b, 24);
     }
 }
+```
+
+## Advanced ORM
+
+An example for advanced ORM to have concepts like database, tables etc:
+
+```rust
+    pub struct TrivialTable;
+    pub struct TrivialTable2;
+
+    // This implements a mdbx table with Key = TrivialKey and Object = TrivialObject
+    mdbx_table!(TrivialTable, TrivialKey, TrivialObject);
+    mdbx_table!(TrivialTable2, TrivialKey, TrivialObject, YouCustomError, MetadataType);
+
+    // And now you could do
+    let out: TrivialObject = TrivialTable::get_item(&tx, &TrivialKey { ... }).await?;
+
+    // A database could also 
+    mdbx_database!(
+        TrivialDatabase,
+        mdbx_derive::Error,
+        MetadataType,
+        TrivialTable,
+        TrivialTable2
+    );
+
+    // And now you have:
+    let db: TrivialDatabase = TrivialDatabase::open_create_tables_with_defaults(
+        url, // url that mdbx-remote accepts
+        defaults, // default setup
+    ).await?;
+
+    // Note this create tables for you so you can have
+    let trivial_table_dbi: u32 = db.dbis.trival_table;
+
+    // or do not create but open existing tables
+    let db: TrivialDatabase = TrivialDatabase::open_tables_with_defaults(
+        url, // url that mdbx-remote accepts
+        defaults, // default setup
+    ).await?;
+
+    // now get metadata
+    let meta: MetadataType = db.metadata().await?;
 ```

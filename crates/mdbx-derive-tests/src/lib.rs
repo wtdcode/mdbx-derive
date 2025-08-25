@@ -32,20 +32,20 @@ mod test {
     }
 
     #[allow(dead_code)]
-    pub struct TrivailTable;
+    pub struct TrivialTable;
     #[allow(dead_code)]
-    pub struct TrivailTable2;
+    pub struct TrivialTable2;
 
-    mdbx_table!(TrivailTable, TrivialKey, TrivialObject);
-    mdbx_table!(TrivailTable2, TrivialKey, TrivialObject);
+    mdbx_table!(TrivialTable, TrivialKey, TrivialObject);
+    mdbx_table!(TrivialTable2, TrivialKey, TrivialObject);
 
-    mdbx_database!(TrivialDatabase, mdbx_derive::Error, (), TrivailTable);
+    mdbx_database!(TrivialDatabase, mdbx_derive::Error, (), TrivialTable);
     mdbx_database!(
         TrivialDatabase2,
         mdbx_derive::Error,
         (),
-        TrivailTable,
-        TrivailTable2
+        TrivialTable,
+        TrivialTable2
     );
 
     #[test]
