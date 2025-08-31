@@ -370,6 +370,11 @@ pub fn generate_dbi_struct(input: TokenStream) -> TokenStream {
             let ident = Ident::new(&field_name_str, proc_macro2::Span::call_site());
 
             quote! {
+                let flags = if <#ty as mdbx_derive::MDBXTable>::DUPSORT {
+                    mdbx_derive::mdbx::DatabaseFlags::DUP_SORT
+                } else {
+                    mdbx_derive::mdbx::DatabaseFlags::default()
+                };
                 let #ident = <#ty as mdbx_derive::MDBXTable>::create_table_tx(&tx, flags).await?;
 
             }
@@ -435,7 +440,6 @@ pub fn generate_dbi_struct(input: TokenStream) -> TokenStream {
         impl #struct_name {
             pub async fn new(
                 env: &mdbx_derive::mdbx::EnvironmentAny,
-                flags: mdbx_derive::mdbx::DatabaseFlags,
             ) -> Result<Self, #error_type> {
                 let tx = env.begin_rw_txn().await?;
 

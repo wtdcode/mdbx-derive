@@ -88,6 +88,7 @@ pub trait MDBXTable: Sized {
     type Error: From<libmdbx_remote::ClientError> + From<MDBXDeriveError> + Send + 'static;
     type Metadata: TableObjectEncode + TableObjectDecode + Send + Sync;
     const NAME: Option<&'static str>;
+    const DUPSORT: bool = false;
 
     fn open_table_tx<T: libmdbx_remote::TransactionKind>(
         tx: &libmdbx_remote::TransactionAny<T>,
@@ -289,6 +290,87 @@ pub trait MDBXDatabase: Sized + Send + Sync + HasMDBXEnvironment + HasMDBXTables
 // macros to generate table/database
 
 #[macro_export]
+macro_rules! mdbx_dupsort_table {
+    (
+        $struct_name:ident,
+        $key_type:ty,
+        $value_type:ty
+    ) => {
+        $crate::mdbx_dupsort_table!($struct_name, $key_type, $value_type, mdbx_derive::Error, ());
+    };
+    (
+        $struct_name:ident,
+        $key_type:ty,
+        $value_type:ty,
+        $error_type:ty
+    ) => {
+        $crate::mdbx_dupsort_table!($struct_name, $key_type, $value_type, $error_type, ());
+    };
+    (
+        $struct_name:ident,
+        $key_type:ty,
+        $value_type:ty,
+        $error_type:ty,
+        $metadata_type:ty
+    ) => {
+        impl mdbx_derive::MDBXTable for $struct_name {
+            type Key = $key_type;
+            type Value = $value_type;
+            type Error = $error_type;
+            type Metadata = $metadata_type;
+
+            const DUPSORT: bool = true;
+            const NAME: Option<&'static str> = Some(stringify!($struct_name));
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! mdbx_dupsort_table_def {
+    (
+        $struct_name:ident,
+        $key_type:ty,
+        $value_type:ty
+    ) => {
+        $crate::mdbx_dupsort_table_def!(
+            $struct_name,
+            $key_type,
+            $value_type,
+            mdbx_derive::Error,
+            ()
+        );
+    };
+    (
+        $struct_name:ident,
+        $key_type:ty,
+        $value_type:ty,
+        $error_type:ty
+    ) => {
+        $crate::mdbx_dupsort_table_def!($struct_name, $key_type, $value_type, $error_type, ());
+    };
+    (
+        $struct_name:ident,
+        $key_type:ty,
+        $value_type:ty,
+        $error_type:ty,
+        $metadata_type:ty
+    ) => {
+        #[derive(Clone, Debug, Copy, Default)]
+        pub struct $struct_name;
+
+        impl mdbx_derive::MDBXTable for $struct_name {
+            type Key = $key_type;
+            type Value = $value_type;
+            type Error = $error_type;
+            type Metadata = $metadata_type;
+
+            const DUPSORT: bool = true;
+            const NAME: Option<&'static str> = Some(stringify!($struct_name));
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! mdbx_table {
     (
         $struct_name:ident,
@@ -318,6 +400,7 @@ macro_rules! mdbx_table {
             type Error = $error_type;
             type Metadata = $metadata_type;
 
+            const DUPSORT: bool = false;
             const NAME: Option<&'static str> = Some(stringify!($struct_name));
         }
     };
@@ -356,6 +439,7 @@ macro_rules! mdbx_table_def {
             type Error = $error_type;
             type Metadata = $metadata_type;
 
+            const DUPSORT: bool = false;
             const NAME: Option<&'static str> = Some(stringify!($struct_name));
         }
     };
@@ -395,7 +479,7 @@ macro_rules! mdbx_database {
 
                 pub async fn open_create_tables_with_defaults(url: &str, defaults: mdbx_derive::mdbx::EnvironmentBuilder) -> Result<Self, $error_type> {
                     let env =  mdbx_derive::mdbx::EnvironmentAny::open_with_defaults(url, defaults).await?;
-                    let dbis = [<$db_name Dbi>]::new(&env, mdbx_derive::mdbx::DatabaseFlags::default())
+                    let dbis = [<$db_name Dbi>]::new(&env)
                             .await?;
                     Ok(Self::new(env, dbis))
                 }
