@@ -5,7 +5,7 @@ mod test {
     use bincode::{Decode, Encode};
     use mdbx_derive::{
         HasMDBXEnvironment, KeyObject, KeyObjectDecode, KeyObjectEncode, TableObjectDecode,
-        TableObjectEncode, ZstdBincodeObject, generate_dbi_struct, mdbx_database, mdbx_table,
+        TableObjectEncode, ZstdBincodeObject, mdbx_database, mdbx_table, mdbx_table_def,
     };
     use serde::{Deserialize, Serialize};
 
@@ -33,11 +33,9 @@ mod test {
 
     #[allow(dead_code)]
     pub struct TrivialTable;
-    #[allow(dead_code)]
-    pub struct TrivialTable2;
 
     mdbx_table!(TrivialTable, TrivialKey, TrivialObject);
-    mdbx_table!(TrivialTable2, TrivialKey, TrivialObject);
+    mdbx_table_def!(TrivialTable2, TrivialKey, TrivialObject);
 
     mdbx_database!(TrivialDatabase, mdbx_derive::Error, (), TrivialTable);
     mdbx_database!(

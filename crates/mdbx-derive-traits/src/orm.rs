@@ -324,6 +324,44 @@ macro_rules! mdbx_table {
 }
 
 #[macro_export]
+macro_rules! mdbx_table_def {
+    (
+        $struct_name:ident,
+        $key_type:ty,
+        $value_type:ty
+    ) => {
+        $crate::mdbx_table_def!($struct_name, $key_type, $value_type, mdbx_derive::Error, ());
+    };
+    (
+        $struct_name:ident,
+        $key_type:ty,
+        $value_type:ty,
+        $error_type:ty
+    ) => {
+        $crate::mdbx_table_def!($struct_name, $key_type, $value_type, $error_type, ());
+    };
+    (
+        $struct_name:ident,
+        $key_type:ty,
+        $value_type:ty,
+        $error_type:ty,
+        $metadata_type:ty
+    ) => {
+        #[derive(Clone, Debug, Copy, Default)]
+        pub struct $struct_name;
+
+        impl mdbx_derive::MDBXTable for $struct_name {
+            type Key = $key_type;
+            type Value = $value_type;
+            type Error = $error_type;
+            type Metadata = $metadata_type;
+
+            const NAME: Option<&'static str> = Some(stringify!($struct_name));
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! mdbx_database {
     (
         $db_name:ident,

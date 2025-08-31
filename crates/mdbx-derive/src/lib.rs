@@ -4,7 +4,7 @@ pub use mdbx_derive_traits::key::{KeyObjectDecode, KeyObjectEncode};
 pub use mdbx_derive_traits::{
     orm::{HasMDBXDBIStore, HasMDBXEnvironment, HasMDBXTables, MDBXDatabase, MDBXTable},
     table::{TableObjectDecode, TableObjectEncode},
-    {mdbx_database, mdbx_table},
+    {mdbx_database, mdbx_table, mdbx_table_def},
 };
 
 pub use paste;
