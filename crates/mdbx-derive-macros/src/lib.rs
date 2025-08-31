@@ -464,6 +464,8 @@ pub fn generate_dbi_struct(input: TokenStream) -> TokenStream {
             let ident = Ident::new(&field_name_str, proc_macro2::Span::call_site());
             let wfname_tx = Ident::new(format!("write_{}_tx", &field_name_str).as_str(), proc_macro2::Span::call_site());
             let rfname_tx = Ident::new(format!("read_{}_tx", &field_name_str).as_str(), proc_macro2::Span::call_site());
+            let dfname_tx = Ident::new(format!("del_{}_tx", &field_name_str).as_str(), proc_macro2::Span::call_site());
+            let cursor_fname = Ident::new(format!("{}_cursor", &field_name_str).as_str(), proc_macro2::Span::call_site());
             quote! {
                 pub async fn #wfname_tx
                 (
@@ -497,6 +499,30 @@ pub fn generate_dbi_struct(input: TokenStream) -> TokenStream {
                     } else {
                         Ok(None)
                     }
+                }
+
+                pub async fn #dfname_tx
+                (
+                    &self,
+                    tx: &mdbx_derive::mdbx::TransactionAny<mdbx_derive::mdbx::RW>,
+                    key: &<#ty as mdbx_derive::MDBXTable>::Key,
+                    value: Option<&<#ty as mdbx_derive::MDBXTable>::Value>
+                ) -> Result<bool, mdbx_derive::Error> {
+                    let v = value.map(|v| <<#ty as mdbx_derive::MDBXTable>::Value as mdbx_derive::TableObjectEncode>::table_encode(v))
+                            .transpose()?;
+                    Ok(tx.del(
+                        self.#ident,
+                        &<<#ty as mdbx_derive::MDBXTable>::Key as mdbx_derive::KeyObjectEncode>::key_encode(key)?,
+                        v.as_ref().map(|t| t.as_slice())
+                    ).await?)
+                }
+
+                pub async fn #cursor_fname <K: mdbx_derive::mdbx::TransactionKind>
+                (
+                    &self,
+                    tx: &mdbx_derive::mdbx::TransactionAny<K>
+                ) -> Result<mdbx_derive::mdbx::CursorAny<K>, mdbx_derive::Error> {
+                    Ok(tx.cursor_with_dbi(self.#ident).await?)
                 }
             }
         })
