@@ -431,6 +431,57 @@ pub fn generate_dbi_struct(input: TokenStream) -> TokenStream {
         })
         .collect(); // The crucial change is here!
 
+    let rw_tables: Vec<_> = tables
+        .iter()
+        .map(|table_type| {
+            let type_path = if let Type::Path(tp) = table_type {
+                tp
+            } else {
+                panic!("Expected a type path")
+            };
+            let ty = type_path.path.segments.last().unwrap().ident.clone();
+            let field_name_str = ty.to_string().to_snake_case();
+            let ident = Ident::new(&field_name_str, proc_macro2::Span::call_site());
+            let wfname_tx = Ident::new(format!("write_{}_tx", &field_name_str).as_str(), proc_macro2::Span::call_site());
+            let rfname_tx = Ident::new(format!("read_{}_tx", &field_name_str).as_str(), proc_macro2::Span::call_site());
+            quote! {
+                async fn #wfname_tx
+                (
+                    &self,
+                    tx: &mdbx_derive::mdbx::TransactionAny<mdbx_derive::mdbx::RW>,
+                    key: &<#ty as mdbx_derive::MDBXTable>::Key,
+                    value: &<#ty as mdbx_derive::MDBXTable>::Value,
+                    flags: mdbx_derive::mdbx::WriteFlags
+                ) -> Result<(), mdbx_derive::Error> {
+                    tx.put(
+                        self.#ident,
+                        &<<#ty as mdbx_derive::MDBXTable>::Key as mdbx_derive::KeyObjectEncode>::key_encode(key)?,
+                        &<<#ty as mdbx_derive::MDBXTable>::Value as mdbx_derive::TableObjectEncode>::table_encode(value)?,
+                        flags
+                    ).await?;
+                    Ok(())
+                }
+
+                async fn #rfname_tx <K: mdbx_derive::mdbx::TransactionKind>
+                (
+                    &self,
+                    tx: &mdbx_derive::mdbx::TransactionAny<K>,
+                    key: &<#ty as mdbx_derive::MDBXTable>::Key
+                ) -> Result<Option< <#ty as mdbx_derive::MDBXTable>::Value >, mdbx_derive::Error> {
+                    let v = tx.get::<Vec<u8>>(
+                        self.#ident,
+                        &<<#ty as mdbx_derive::MDBXTable>::Key as mdbx_derive::KeyObjectEncode>::key_encode(key)?,
+                    ).await?;
+                    if let Some(v) = v {
+                        Ok(Some(<<#ty as mdbx_derive::MDBXTable>::Value as mdbx_derive::TableObjectDecode>::table_decode(&v)?))
+                    } else {
+                        Ok(None)
+                    }
+                }
+            }
+        })
+        .collect();
+
     let output = quote! {
         #[derive(Debug, Clone, Copy)]
         pub struct #struct_name {
@@ -466,6 +517,10 @@ pub fn generate_dbi_struct(input: TokenStream) -> TokenStream {
                     #( #field_names, )*
                 })
             }
+
+            #(
+                #rw_tables
+            )*
         }
 
         impl mdbx_derive::HasMDBXTables for #struct_name {
