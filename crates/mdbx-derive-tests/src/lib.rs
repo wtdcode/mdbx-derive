@@ -4,7 +4,7 @@ mod test {
 
     use bincode::{Decode, Encode};
     use mdbx_derive::{
-        HasMDBXEnvironment, KeyObject, KeyObjectDecode, KeyObjectEncode, TableObjectDecode,
+        KeyAsTableObject, KeyObject, KeyObjectDecode, KeyObjectEncode, TableObjectDecode,
         TableObjectEncode, ZstdBincodeObject, mdbx_database, mdbx_table, mdbx_table_def,
     };
     use serde::{Deserialize, Serialize};
@@ -12,7 +12,7 @@ mod test {
     #[cfg(any(feature = "simd-json", feature = "serde_json"))]
     use mdbx_derive::ZstdJSONObject;
 
-    #[derive(Encode, Decode, Default, Serialize, Deserialize, KeyObject)]
+    #[derive(Encode, Decode, Default, Serialize, Deserialize, KeyObject, KeyAsTableObject)]
     pub struct TrivialKey {
         a: u64,
         b: u64,

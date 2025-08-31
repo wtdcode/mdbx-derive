@@ -237,6 +237,26 @@ pub fn derive_zstd_bcs_object(input: TokenStream) -> TokenStream {
     output.into()
 }
 
+#[proc_macro_derive(KeyAsTableObject)]
+pub fn derive_key_table_object(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let ident = input.ident;
+    let output = quote! {
+        impl mdbx_derive::TableObjectDecode for #ident {
+            fn table_decode(data_val: &[u8]) -> Result<Self, mdbx_derive::Error> {
+                <#ident as mdbx_derive::KeyObjectDecode>::key_decode(data_val)
+            }
+        }
+
+        impl mdbx_derive::TableObjectEncode for #ident {
+            fn table_encode(&self) -> Result<Vec<u8>, mdbx_derive::Error> {
+                <#ident as mdbx_derive::KeyObjectEncode>::key_encode(self)
+            }
+        }
+    };
+    output.into()
+}
+
 #[proc_macro_derive(ZstdBincodeObject)]
 pub fn derive_zstd_bindcode(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
