@@ -465,7 +465,7 @@ pub fn generate_dbi_struct(input: TokenStream) -> TokenStream {
             let wfname_tx = Ident::new(format!("write_{}_tx", &field_name_str).as_str(), proc_macro2::Span::call_site());
             let rfname_tx = Ident::new(format!("read_{}_tx", &field_name_str).as_str(), proc_macro2::Span::call_site());
             quote! {
-                async fn #wfname_tx
+                pub async fn #wfname_tx
                 (
                     &self,
                     tx: &mdbx_derive::mdbx::TransactionAny<mdbx_derive::mdbx::RW>,
@@ -482,7 +482,7 @@ pub fn generate_dbi_struct(input: TokenStream) -> TokenStream {
                     Ok(())
                 }
 
-                async fn #rfname_tx <K: mdbx_derive::mdbx::TransactionKind>
+                pub async fn #rfname_tx <K: mdbx_derive::mdbx::TransactionKind>
                 (
                     &self,
                     tx: &mdbx_derive::mdbx::TransactionAny<K>,
