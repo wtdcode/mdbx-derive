@@ -1,11 +1,9 @@
 use thiserror::Error;
 
-#[cfg(feature = "serde_json")]
+#[cfg(all(feature = "serde_json", not(feature = "simd-json")))]
 type JSONError = serde_json::Error;
 #[cfg(feature = "simd-json")]
 type JSONError = simd_json::Error;
-#[cfg(all(not(feature = "simd-json"), not(feature = "serde_json")))]
-type JSONError = String;
 
 #[derive(Error, Debug)]
 pub enum MDBXDeriveError {
@@ -18,18 +16,19 @@ pub enum MDBXDeriveError {
     JSON(#[from] JSONError),
     #[error("zstd: {0}")]
     Zstd(#[from] std::io::Error),
-    #[error("bincode encode: {0}")]
-    BincodeEncode(#[from] bincode::error::EncodeError),
-    #[error("bincode decode: {0}")]
-    BincodeDecode(#[from] bincode::error::DecodeError),
+    #[error("postcard: {0}")]
+    Postcard(#[from] postcard::Error),
+    #[cfg(feature = "mdbx")]
     #[error("mdbx: {0}")]
     MDBX(#[from] libmdbx_remote::Error),
+    #[cfg(feature = "mdbx")]
     #[error("mdbx-remote: {0}")]
     Client(libmdbx_remote::ClientError),
     #[error("bcs: {0}")]
     BCS(#[from] bcs::Error),
 }
 
+#[cfg(feature = "mdbx")]
 impl From<libmdbx_remote::ClientError> for MDBXDeriveError {
     fn from(value: libmdbx_remote::ClientError) -> Self {
         match value {

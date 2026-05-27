@@ -17,6 +17,7 @@ heck.workspace = true
 [features]
 default = ["json"]
 json = []
+mdbx = []
 
 [lib]
 proc-macro = true

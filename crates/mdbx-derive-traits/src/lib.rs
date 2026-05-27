@@ -2,6 +2,7 @@
 
 pub mod error;
 pub mod key;
+#[cfg(feature = "mdbx")]
 pub mod orm;
 pub mod table;
 

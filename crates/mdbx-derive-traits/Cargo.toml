@@ -11,13 +11,14 @@ repository.workspace = true
 [features]
 default = ["alloy", "serde_json"]
 alloy = ["alloy-primitives"]
+mdbx = ["dep:libmdbx-remote"]
 
 [dependencies]
-alloy-primitives = {version = "0.8", optional = true}
+alloy-primitives = {version = "1.6", optional = true}
 thiserror.workspace = true
 zstd.workspace = true
-bincode.workspace = true
-libmdbx-remote.workspace = true
+postcard.workspace = true
+libmdbx-remote = {workspace = true, optional = true}
 bcs.workspace = true
 serde_json = {workspace = true, optional = true}
 simd-json = {workspace = true, features = ["serde_impl"], optional = true}

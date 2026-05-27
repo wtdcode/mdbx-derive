@@ -2,49 +2,55 @@
 mod test {
     use std::io::Cursor;
 
-    use bincode::{Decode, Encode};
     use mdbx_derive::{
         KeyAsTableObject, KeyObject, KeyObjectDecode, KeyObjectEncode, TableObjectDecode,
-        TableObjectEncode, ZstdBincodeObject, mdbx_database, mdbx_table, mdbx_table_def,
+        TableObjectEncode, ZstdPostcardObject,
     };
+    #[cfg(feature = "mdbx")]
+    use mdbx_derive::{mdbx_database, mdbx_table, mdbx_table_def};
     use serde::{Deserialize, Serialize};
 
     #[cfg(any(feature = "simd-json", feature = "serde_json"))]
     use mdbx_derive::ZstdJSONObject;
 
-    #[derive(Encode, Decode, Default, Serialize, Deserialize, KeyObject, KeyAsTableObject)]
+    #[derive(Default, Serialize, Deserialize, KeyObject, KeyAsTableObject)]
     pub struct TrivialKey {
         a: u64,
         b: u64,
     }
 
-    #[derive(Encode, Decode, Default, Serialize, Deserialize, ZstdBincodeObject)]
+    #[derive(Default, Serialize, Deserialize, ZstdPostcardObject)]
     pub struct TrivialObject {
         a: u64,
         b: u64,
     }
 
     #[cfg(any(feature = "simd-json", feature = "serde_json"))]
-    #[derive(Encode, Decode, Default, Serialize, Deserialize, ZstdJSONObject)]
+    #[derive(Default, Serialize, Deserialize, ZstdJSONObject)]
     struct TrivialJSONKey {
         a: u64,
         b: u64,
     }
 
-    #[allow(dead_code)]
-    pub struct TrivialTable;
+    #[cfg(feature = "mdbx")]
+    mod mdbx_tests {
+        use super::*;
 
-    mdbx_table!(TrivialTable, TrivialKey, TrivialObject);
-    mdbx_table_def!(TrivialTable2, TrivialKey, TrivialObject);
+        #[allow(dead_code)]
+        pub struct TrivialTable;
 
-    mdbx_database!(TrivialDatabase, mdbx_derive::Error, (), TrivialTable);
-    mdbx_database!(
-        TrivialDatabase2,
-        mdbx_derive::Error,
-        (),
-        TrivialTable,
-        TrivialTable2
-    );
+        mdbx_table!(TrivialTable, TrivialKey, TrivialObject);
+        mdbx_table_def!(TrivialTable2, TrivialKey, TrivialObject);
+
+        mdbx_database!(TrivialDatabase, mdbx_derive::Error, (), TrivialTable);
+        mdbx_database!(
+            TrivialDatabase2,
+            mdbx_derive::Error,
+            (),
+            TrivialTable,
+            TrivialTable2
+        );
+    }
 
     #[test]
     fn trivial_key() {
@@ -64,8 +70,7 @@ mod test {
         let ky = k.table_encode().expect("fail to encode");
         let expected = mdbx_derive::zstd::encode_all(
             Cursor::new(
-                mdbx_derive::bincode::encode_to_vec(&k, mdbx_derive::bincode::config::standard())
-                    .expect("bincode"),
+                mdbx_derive::postcard::to_allocvec(&k).expect("postcard"),
             ),
             1,
         )
@@ -83,7 +88,7 @@ mod test {
         let k = TrivialJSONKey { a: 42, b: 24 };
         let ky = k.table_encode().expect("fail to encode");
         let expected = mdbx_derive::zstd::encode_all(
-            Cursor::new(mdbx_derive::json::to_vec(&k).expect("bincode")),
+            Cursor::new(mdbx_derive::json::to_vec(&k).expect("json")),
             1,
         )
         .expect("zstd");

@@ -1,13 +1,18 @@
+#[cfg(feature = "mdbx")]
 use heck::ToSnakeCase;
 use itertools::Itertools;
 use proc_macro::TokenStream;
 use quote::{quote, quote_spanned};
 use syn::{
-    Data, DeriveInput, Fields, Ident, Index, Token, Type,
-    parse::{Parse, ParseStream},
+    Data, DeriveInput, Fields, Index,
     parse_macro_input,
-    punctuated::Punctuated,
     spanned::Spanned,
+};
+#[cfg(feature = "mdbx")]
+use syn::{
+    Ident, Token, Type,
+    parse::{Parse, ParseStream},
+    punctuated::Punctuated,
 };
 
 #[proc_macro_derive(KeyObject)]
@@ -48,6 +53,17 @@ pub fn derive(input: TokenStream) -> TokenStream {
             compile_error!("Not supported struct")
         },
     };
+    #[cfg(feature = "mdbx")]
+    let table_object_impl = quote! {
+        impl mdbx_derive::mdbx::TableObject for #ident {
+            fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
+                <Self as mdbx_derive::KeyObjectDecode>::key_decode(data_val).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)
+            }
+        }
+    };
+    #[cfg(not(feature = "mdbx"))]
+    let table_object_impl = quote! {};
+
     let output = quote! {
         impl mdbx_derive::KeyObjectEncode for #ident {
             fn key_encode(&self) -> Result<Vec<u8>, mdbx_derive::Error> {
@@ -55,11 +71,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl mdbx_derive::mdbx::TableObject for #ident {
-            fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
-                <Self as mdbx_derive::KeyObjectDecode>::key_decode(data_val).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)
-            }
-        }
+        #table_object_impl
 
         #decode
     };
@@ -179,6 +191,18 @@ fn decode_impl(input: &DeriveInput) -> proc_macro2::TokenStream {
 pub fn derive_bcs_object(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let ident = input.ident;
+
+    #[cfg(feature = "mdbx")]
+    let table_object_impl = quote! {
+        impl mdbx_derive::mdbx::TableObject for #ident {
+            fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
+                mdbx_derive::bcs::from_bytes(&data_val).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)
+            }
+        }
+    };
+    #[cfg(not(feature = "mdbx"))]
+    let table_object_impl = quote! {};
+
     let output = quote! {
         impl mdbx_derive::TableObjectDecode for #ident {
             fn table_decode(data_val: &[u8]) -> Result<Self, mdbx_derive::Error> {
@@ -186,11 +210,7 @@ pub fn derive_bcs_object(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl mdbx_derive::mdbx::TableObject for #ident {
-            fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
-                mdbx_derive::bcs::from_bytes(&data_val).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)
-            }
-        }
+        #table_object_impl
 
         impl mdbx_derive::TableObjectEncode for #ident {
             fn table_encode(&self) -> Result<Vec<u8>, mdbx_derive::Error> {
@@ -205,6 +225,21 @@ pub fn derive_bcs_object(input: TokenStream) -> TokenStream {
 pub fn derive_zstd_bcs_object(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let ident = input.ident;
+
+    #[cfg(feature = "mdbx")]
+    let table_object_impl = quote! {
+        impl mdbx_derive::mdbx::TableObject for #ident {
+            fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
+                let decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|_| {
+                    mdbx_derive::mdbx::Error::Corrupted
+                })?;
+                mdbx_derive::bcs::from_bytes(&decompressed).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)
+            }
+        }
+    };
+    #[cfg(not(feature = "mdbx"))]
+    let table_object_impl = quote! {};
+
     let output = quote! {
         impl mdbx_derive::TableObjectDecode for #ident {
             fn table_decode(data_val: &[u8]) -> Result<Self, mdbx_derive::Error> {
@@ -215,14 +250,7 @@ pub fn derive_zstd_bcs_object(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl mdbx_derive::mdbx::TableObject for #ident {
-            fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
-                let decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|_| {
-                    mdbx_derive::mdbx::Error::Corrupted
-                })?;
-                mdbx_derive::bcs::from_bytes(&decompressed).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)
-            }
-        }
+        #table_object_impl
 
         impl mdbx_derive::TableObjectEncode for #ident {
             fn table_encode(&self) -> Result<Vec<u8>, mdbx_derive::Error> {
@@ -257,35 +285,40 @@ pub fn derive_key_table_object(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-#[proc_macro_derive(ZstdBincodeObject)]
-pub fn derive_zstd_bindcode(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(ZstdPostcardObject)]
+pub fn derive_zstd_postcard(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let ident = input.ident;
-    let output = quote! {
-        impl mdbx_derive::TableObjectDecode for #ident {
-            fn table_decode(data_val: &[u8]) -> Result<Self, mdbx_derive::Error> {
-                let config = mdbx_derive::bincode::config::standard();
-                let decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|e| {
-                    mdbx_derive::Error::Zstd(e)
-                })?;
-                Ok(mdbx_derive::bincode::decode_from_slice(&decompressed, config)?.0)
-            }
-        }
 
+    #[cfg(feature = "mdbx")]
+    let table_object_impl = quote! {
         impl mdbx_derive::mdbx::TableObject for #ident {
             fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
-                let config = mdbx_derive::bincode::config::standard();
                 let decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|_| {
                     mdbx_derive::mdbx::Error::Corrupted
                 })?;
-                Ok(mdbx_derive::bincode::decode_from_slice(&decompressed, config).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)?.0)
+                mdbx_derive::postcard::from_bytes(&decompressed).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)
+            }
+        }
+    };
+    #[cfg(not(feature = "mdbx"))]
+    let table_object_impl = quote! {};
+
+    let output = quote! {
+        impl mdbx_derive::TableObjectDecode for #ident {
+            fn table_decode(data_val: &[u8]) -> Result<Self, mdbx_derive::Error> {
+                let decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|e| {
+                    mdbx_derive::Error::Zstd(e)
+                })?;
+                Ok(mdbx_derive::postcard::from_bytes(&decompressed)?)
             }
         }
 
+        #table_object_impl
+
         impl mdbx_derive::TableObjectEncode for #ident {
             fn table_encode(&self) -> Result<Vec<u8>, mdbx_derive::Error> {
-                let config = mdbx_derive::bincode::config::standard();
-                let bs = mdbx_derive::bincode::encode_to_vec(&self, config)?;
+                let bs = mdbx_derive::postcard::to_allocvec(&self)?;
                 let compressed = mdbx_derive::zstd::encode_all(std::io::Cursor::new(bs), 1).map_err(|e| {
                     mdbx_derive::Error::Zstd(e)
                 })?;
@@ -301,6 +334,21 @@ pub fn derive_zstd_bindcode(input: TokenStream) -> TokenStream {
 pub fn derive_zstd_json(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let ident = input.ident;
+
+    #[cfg(feature = "mdbx")]
+    let table_object_impl = quote! {
+        impl mdbx_derive::mdbx::TableObject for #ident {
+            fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
+                let mut decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|_| {
+                    mdbx_derive::mdbx::Error::Corrupted
+                })?;
+                mdbx_derive::json::from_slice(&mut decompressed).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)
+            }
+        }
+    };
+    #[cfg(not(feature = "mdbx"))]
+    let table_object_impl = quote! {};
+
     let output = quote! {
         impl mdbx_derive::TableObjectDecode for #ident {
             fn table_decode(data_val: &[u8]) -> Result<Self, mdbx_derive::Error> {
@@ -311,14 +359,7 @@ pub fn derive_zstd_json(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl mdbx_derive::mdbx::TableObject for #ident {
-            fn decode(data_val: &[u8]) -> Result<Self, mdbx_derive::mdbx::Error> {
-                let mut decompressed = mdbx_derive::zstd::decode_all(data_val).map_err(|_| {
-                    mdbx_derive::mdbx::Error::Corrupted
-                })?;
-                mdbx_derive::json::from_slice(&mut decompressed).map_err(|_| mdbx_derive::mdbx::Error::Corrupted)
-            }
-        }
+        #table_object_impl
 
         impl mdbx_derive::TableObjectEncode for #ident {
             fn table_encode(&self) -> Result<Vec<u8>, mdbx_derive::Error> {
@@ -333,13 +374,14 @@ pub fn derive_zstd_json(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-// Helper struct to parse the macro's input
+#[cfg(feature = "mdbx")]
 struct MacroInput {
     struct_name: Ident,
     error_type: Type,
     tables: Punctuated<Type, Token![,]>,
 }
 
+#[cfg(feature = "mdbx")]
 impl Parse for MacroInput {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let struct_name: Ident = input.parse()?;
@@ -355,6 +397,7 @@ impl Parse for MacroInput {
     }
 }
 
+#[cfg(feature = "mdbx")]
 #[proc_macro]
 pub fn generate_dbi_struct(input: TokenStream) -> TokenStream {
     let MacroInput {
