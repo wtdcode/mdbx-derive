@@ -1,145 +1,128 @@
 ## MDBX Derive
 
-Macro to define and derive mdbx types.
+Derive macros and a lightweight ORM for [libmdbx](https://gitflic.ru/project/erthink/libmdbx), built on top of [libmdbx-remote](https://crates.io/crates/libmdbx-remote).
 
 ## Usage
 
-There are three macros to derive on your structs:
+### Derive Macros
 
-- `KeyObject`: This will implement `key_encode/decode` for the struct, by strictly serializing the fields one by one as plain bytes, each occupying `std::size_of` bytes. For example, a struct having one u8 and one u16 will be serialized to 3 bytes. Note this encoding has ambiguity and thus can be only decoded with the scheme.
-- `ZstdBincodeObject`: This will implement `table_encode/decode` for the struct, by serializing the contents to `bincode` and then compressing the `bincode` to `zstd`.
-- `ZstdJSONObject`: This will `table_encode/decode` for the struct, by serializing the contents to `json` and then compressing the `json` with `zstd`.
+#### Key encoding
 
-## Features
+- `KeyObject` — Implements `KeyObjectEncode` / `KeyObjectDecode` by serializing each field as raw big-endian bytes, concatenated in declaration order. A struct with one `u8` and one `u16` produces exactly 3 bytes. The encoding is unambiguous only when decoded with the same schema.
+- `KeyAsTableObject` — Reuses the `KeyObject` encoding as a `TableObjectEncode` / `TableObjectDecode` implementation.
 
-- `serde_json`: Use `serde_json` for `ZstdJSONObject` macro.
-- `simd_json`: Use `simd_json` for `ZstdJSONObject` macro.
-- `bcs`: Support `bcs` encoding, mostly for sui move.
-- `alloy`: Implement `KeyObject` for alloy tyes.
+#### Value (table object) encoding
 
-## Tutorial
+- `ZstdPostcardObject` — Serializes with [postcard](https://crates.io/crates/postcard), then compresses with zstd.
+- `ZstdJSONObject` — Serializes to JSON (`serde_json` or `simd-json`), then compresses with zstd. Requires `serde_json` or `simd-json` feature.
+- `ZstdBcsObject` — Serializes with [BCS](https://crates.io/crates/bcs), then compresses with zstd. Requires `bcs` feature.
+- `BcsObject` — Serializes with BCS (no compression). Requires `bcs` feature.
 
-## Minimal Example
+#### ORM macros (require `mdbx` feature)
 
-`mdbx-derive` actually is not limited with `mdbx` and can be used to serialize/deserialize data freely.
+- `mdbx_table!` / `mdbx_table_def!` — Define a table with key/value types.
+- `mdbx_dupsort_table!` / `mdbx_dupsort_table_def!` — Define a DUPSORT table.
+- `mdbx_database!` — Define a database struct that groups multiple tables, with auto-generated DBI handles and helper methods.
+
+### Features
+
+| Feature | Default | Description |
+|---|---|---|
+| `mdbx` | no | Enable `libmdbx-remote` dependency and the ORM layer (`mdbx_table!`, `mdbx_database!`, etc.). Without this, the crate provides only the derive macros and encode/decode traits. |
+| `serde_json` | yes | Use `serde_json` for `ZstdJSONObject`. |
+| `simd-json` | no | Use `simd-json` for `ZstdJSONObject` (takes precedence over `serde_json` when both are enabled). |
+| `bcs` | yes | Support BCS encoding (`BcsObject`, `ZstdBcsObject`). |
+| `alloy` | yes (in `mdbx-derive-traits`) | Implement `KeyObjectEncode` / `KeyObjectDecode` for alloy types (`Address`, `B256`, `U256`, etc.). |
+
+## Examples
+
+### Minimal — encode/decode only
+
+`mdbx-derive` can be used purely for serialization without any MDBX dependency:
 
 ```rust
-#[cfg(test)]
-mod test {
-    use std::io::Cursor;
+use std::io::Cursor;
 
-    use bincode::{Decode, Encode};
-    use mdbx_derive::{
-        KeyObject, KeyObjectDecode, KeyObjectEncode, TableObjectDecode, TableObjectEncode,
-        ZstdBincodeObject,
-    };
-    use serde::{Deserialize, Serialize};
+use mdbx_derive::{
+    KeyObject, KeyObjectDecode, KeyObjectEncode,
+    TableObjectDecode, TableObjectEncode,
+    ZstdPostcardObject,
+};
+use serde::{Deserialize, Serialize};
 
-    #[cfg(any(feature = "simd-json", feature = "serde_json"))]
-    use mdbx_derive::ZstdJSONObject;
-
-    #[derive(Encode, Decode, Default, Serialize, Deserialize, KeyObject, ZstdBincodeObject)]
-    struct TrivialKey {
-        a: u64,
-        b: u64,
-    }
-
-    #[cfg(any(feature = "simd-json", feature = "serde_json"))]
-    #[derive(Encode, Decode, Default, Serialize, Deserialize, ZstdJSONObject)]
-    struct TrivialJSONKey {
-        a: u64,
-        b: u64,
-    }
-
-    #[test]
-    fn trivial_key() {
-        assert_eq!(TrivialKey::KEYSIZE, std::mem::size_of::<u64>() * 2);
-        let k = TrivialKey { a: 42, b: 24 };
-        let ky = k.key_encode().expect("fail to encode");
-        assert_eq!(ky.len(), std::mem::size_of::<u64>() * 2);
-
-        let ky = TrivialKey::key_decode(&ky).expect("fail to decode key");
-        assert_eq!(ky.a, 42);
-        assert_eq!(ky.b, 24);
-    }
-
-    #[test]
-    fn trivial_object() {
-        let k = TrivialKey { a: 42, b: 24 };
-        let ky = k.table_encode().expect("fail to encode");
-        let expected = mdbx_derive::zstd::encode_all(
-            Cursor::new(
-                mdbx_derive::bincode::encode_to_vec(&k, mdbx_derive::bincode::config::standard())
-                    .expect("bincode"),
-            ),
-            1,
-        )
-        .expect("zstd");
-        assert_eq!(ky, expected);
-
-        let ky = TrivialKey::table_decode(&ky).expect("fail to decode key");
-        assert_eq!(ky.a, 42);
-        assert_eq!(ky.b, 24);
-    }
-
-    #[cfg(any(feature = "simd-json", feature = "serde_json"))]
-    #[test]
-    fn trivial_json() {
-        let k = TrivialJSONKey { a: 42, b: 24 };
-        let ky = k.table_encode().expect("fail to encode");
-        let expected = mdbx_derive::zstd::encode_all(
-            Cursor::new(mdbx_derive::json::to_vec(&k).expect("bincode")),
-            1,
-        )
-        .expect("zstd");
-        assert_eq!(ky, expected);
-
-        let ky = TrivialJSONKey::table_decode(&ky).expect("fail to decode key");
-        assert_eq!(ky.a, 42);
-        assert_eq!(ky.b, 24);
-    }
+#[derive(Default, Serialize, Deserialize, KeyObject)]
+struct TrivialKey {
+    a: u64,
+    b: u64,
 }
+
+#[derive(Default, Serialize, Deserialize, ZstdPostcardObject)]
+struct TrivialObject {
+    a: u64,
+    b: u64,
+}
+
+// Key encode/decode
+let k = TrivialKey { a: 42, b: 24 };
+let encoded = k.key_encode().unwrap();
+assert_eq!(encoded.len(), std::mem::size_of::<u64>() * 2);
+
+let decoded = TrivialKey::key_decode(&encoded).unwrap();
+assert_eq!(decoded.a, 42);
+assert_eq!(decoded.b, 24);
+
+// Table object encode/decode (zstd + postcard)
+let obj = TrivialObject { a: 42, b: 24 };
+let encoded = obj.table_encode().unwrap();
+let decoded = TrivialObject::table_decode(&encoded).unwrap();
+assert_eq!(decoded.a, 42);
+assert_eq!(decoded.b, 24);
 ```
 
-## Advanced ORM
+### ORM — tables and databases
 
-An example for advanced ORM to have concepts like database, tables etc:
+Enable the `mdbx` feature to use the full ORM layer:
+
+```toml
+[dependencies]
+mdbx-derive = { version = "0.7", features = ["mdbx"] }
+```
 
 ```rust
-    pub struct TrivialTable;
-    pub struct TrivialTable2;
+use mdbx_derive::*;
 
-    // This implements a mdbx table with Key = TrivialKey and Object = TrivialObject
-    mdbx_table!(TrivialTable, TrivialKey, TrivialObject);
-    mdbx_table!(TrivialTable2, TrivialKey, TrivialObject, YouCustomError, MetadataType);
+pub struct TrivialTable;
+pub struct TrivialTable2;
 
-    // And now you could do
-    let out: TrivialObject = TrivialTable::get_item(&tx, &TrivialKey { ... }).await?;
+// Define tables with Key and Value types
+mdbx_table!(TrivialTable, TrivialKey, TrivialObject);
+mdbx_table!(TrivialTable2, TrivialKey, TrivialObject, YourCustomError, MetadataType);
 
-    // A database could also 
-    mdbx_database!(
-        TrivialDatabase,
-        mdbx_derive::Error,
-        MetadataType,
-        TrivialTable,
-        TrivialTable2
-    );
+// Query a table directly
+let out: Option<TrivialObject> = TrivialTable::get_item(&env, &TrivialKey { a: 1, b: 2 }).await?;
 
-    // And now you have:
-    let db: TrivialDatabase = TrivialDatabase::open_create_tables_with_defaults(
-        url, // url that mdbx-remote accepts
-        defaults, // default setup
-    ).await?;
+// Group tables into a database
+mdbx_database!(
+    TrivialDatabase,
+    mdbx_derive::Error,
+    MetadataType,
+    TrivialTable,
+    TrivialTable2
+);
 
-    // Note this create tables for you so you can have
-    let trivial_table_dbi: u32 = db.dbis.trival_table;
+// Open and auto-create tables
+let db = TrivialDatabase::open_create_tables_with_defaults(
+    url,      // URL that libmdbx-remote accepts
+    defaults, // EnvironmentBuilder defaults
+).await?;
 
-    // or do not create but open existing tables
-    let db: TrivialDatabase = TrivialDatabase::open_tables_with_defaults(
-        url, // url that mdbx-remote accepts
-        defaults, // default setup
-    ).await?;
+// DBI handles are available on the generated struct
+let dbi: u32 = db.dbis.trivial_table;
 
-    // now get metadata
-    let meta: MetadataType = db.metadata().await?;
+// Or open existing tables without creating
+let db = TrivialDatabase::open_tables_with_defaults(url, defaults).await?;
+
+// Read/write metadata
+let meta: Option<MetadataType> = db.metadata().await?;
+db.write_metadata(&new_meta).await?;
 ```
